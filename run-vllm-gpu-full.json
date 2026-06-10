@@ -80,6 +80,7 @@
                 "sets": [
                     {
                         "params": [
+                            { "arg": "server-mode", "vals": ["vllm"] },
                             { "arg": "device", "vals": ["cuda"] },
                             { "arg": "model", "vals": ["/home/models/Llama-3.1-8B-Instruct"] },
                             { "arg": "dtype", "vals": ["auto"] },

@@ -39,6 +39,10 @@
             {
                 "src": "%bench-dir%/vllm-server-stop",
                 "dest": "/usr/bin/"
+            },
+            {
+                "src": "%bench-dir%/vllm-mock-server.py",
+                "dest": "/usr/bin/"
             }
         ],
         "start": "vllm-server-start",

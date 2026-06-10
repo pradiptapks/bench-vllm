@@ -20,6 +20,12 @@
         {
             "name": "rhel-ai",
             "requirements": []
+        },
+        {
+            "name": "fedora-latest",
+            "requirements": [
+                "guidellm-only"
+            ]
         }
     ],
     "requirements": [
@@ -29,6 +35,15 @@
             "python3_info": {
                 "packages": [
                     "vllm",
+                    "guidellm[recommended]"
+                ]
+            }
+        },
+        {
+            "name": "guidellm-only",
+            "type": "python3",
+            "python3_info": {
+                "packages": [
                     "guidellm[recommended]"
                 ]
             }

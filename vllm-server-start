@@ -8,6 +8,7 @@ exec >vllm-server-stderrout.txt 2>&1
 dump_runtime
 validate_label
 
+server_mode="vllm"
 model="Qwen/Qwen2.5-1.5B-Instruct"
 device="cpu"
 port=8000
@@ -17,7 +18,7 @@ dtype="auto"
 quantization=""
 gpu_memory_utilization="0.90"
 
-longopts="model:,device:,port:,max-model-len:,tensor-parallel-size:"
+longopts="server-mode:,model:,device:,port:,max-model-len:,tensor-parallel-size:"
 longopts+=",dtype:,quantization:,gpu-memory-utilization:"
 
 opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@")
@@ -28,6 +29,11 @@ fi
 eval set -- "$opts"
 while true; do
     case "$1" in
+        --server-mode)
+            shift
+            server_mode=$1
+            shift
+            ;;
         --model)
             shift
             model=$1
@@ -78,6 +84,7 @@ while true; do
     esac
 done
 
+echo "server-mode: $server_mode"
 echo "model: $model"
 echo "device: $device"
 echo "port: $port"
@@ -89,51 +96,57 @@ ip=$(hostname -I | awk '{print $1}')
 
 echo '{"recipient":{"type":"all","id":"all"},"user-object":{"svc":{"ip":"'$ip'","ports":['$port']}}}' >msgs/tx/svc
 
-vllm_cmd="python3 -m vllm.entrypoints.openai.api_server"
-vllm_cmd+=" --model $model"
-vllm_cmd+=" --port $port"
-vllm_cmd+=" --max-model-len $max_model_len"
-vllm_cmd+=" --dtype $dtype"
-
-if [ "$device" == "cpu" ]; then
-    vllm_cmd+=" --device cpu"
-    echo "=== CPU MODE ==="
+if [ "$server_mode" == "mock" ]; then
+    echo "=== MOCK MODE ==="
     validate_sw_prereqs python3 curl
+
+    server_cmd="python3 /usr/bin/vllm-mock-server.py --port $port --model $model"
+    max_wait=30
 else
-    vllm_cmd+=" --tensor-parallel-size $tensor_parallel_size"
-    vllm_cmd+=" --gpu-memory-utilization $gpu_memory_utilization"
-    echo "=== GPU MODE ==="
-    validate_sw_prereqs python3 nvidia-smi curl
+    vllm_cmd="python3 -m vllm.entrypoints.openai.api_server"
+    vllm_cmd+=" --model $model"
+    vllm_cmd+=" --port $port"
+    vllm_cmd+=" --max-model-len $max_model_len"
+    vllm_cmd+=" --dtype $dtype"
+
+    if [ "$device" == "cpu" ]; then
+        vllm_cmd+=" --device cpu"
+        echo "=== CPU MODE ==="
+        validate_sw_prereqs python3 curl
+        max_wait=600
+    else
+        vllm_cmd+=" --tensor-parallel-size $tensor_parallel_size"
+        vllm_cmd+=" --gpu-memory-utilization $gpu_memory_utilization"
+        echo "=== GPU MODE ==="
+        validate_sw_prereqs python3 nvidia-smi curl
+        max_wait=300
+    fi
+
+    if [ -n "$quantization" ] && [ "$quantization" != "none" ]; then
+        vllm_cmd+=" --quantization $quantization"
+    fi
+
+    server_cmd="$vllm_cmd"
 fi
 
-if [ -n "$quantization" ] && [ "$quantization" != "none" ]; then
-    vllm_cmd+=" --quantization $quantization"
-fi
-
-echo "Starting vLLM server: $vllm_cmd"
-$vllm_cmd >vllm-server-output.txt 2>&1 &
+echo "Starting server: $server_cmd"
+$server_cmd >vllm-server-output.txt 2>&1 &
 pid=$!
 echo $pid >vllm-server.pid
-
-if [ "$device" == "cpu" ]; then
-    max_wait=600
-else
-    max_wait=300
-fi
 
 elapsed=0
 while [ $elapsed -lt $max_wait ]; do
     if curl -s http://localhost:${port}/health >/dev/null 2>&1; then
-        echo "vLLM server ready after ${elapsed}s (device=$device)"
+        echo "Server ready after ${elapsed}s (mode=$server_mode, device=$device)"
         exit 0
     fi
     if ! kill -0 $pid 2>/dev/null; then
-        echo "vLLM server process died during startup"
+        echo "Server process died during startup"
         cat vllm-server-output.txt
         exit_error "vLLM server failed to start"
     fi
-    sleep 5
-    elapsed=$((elapsed + 5))
+    sleep 2
+    elapsed=$((elapsed + 2))
 done
 
-exit_error "vLLM server not ready within ${max_wait}s"
+exit_error "Server not ready within ${max_wait}s"

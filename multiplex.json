@@ -1,6 +1,20 @@
 {
     "presets": {
         "cpu-smoke": [
+            { "arg": "server-mode", "vals": ["mock"] },
+            { "arg": "device", "vals": ["cpu"] },
+            { "arg": "model", "vals": ["mock-model"] },
+            { "arg": "dtype", "vals": ["float32"] },
+            { "arg": "max-model-len", "vals": ["256"] },
+            { "arg": "profile", "vals": ["synchronous"] },
+            { "arg": "duration", "vals": ["30"] },
+            { "arg": "input-tokens", "vals": ["64"] },
+            { "arg": "output-tokens", "vals": ["32"] },
+            { "arg": "tensor-parallel-size", "vals": ["1"] },
+            { "arg": "port", "vals": ["8000"] }
+        ],
+        "cpu-functional": [
+            { "arg": "server-mode", "vals": ["vllm"] },
             { "arg": "device", "vals": ["cpu"] },
             { "arg": "model", "vals": ["Qwen/Qwen2.5-1.5B-Instruct"] },
             { "arg": "dtype", "vals": ["float32"] },
@@ -13,6 +27,7 @@
             { "arg": "port", "vals": ["8000"] }
         ],
         "gpu-full": [
+            { "arg": "server-mode", "vals": ["vllm"] },
             { "arg": "device", "vals": ["cuda"] },
             { "arg": "model", "vals": ["meta-llama/Llama-3.1-8B-Instruct"] },
             { "arg": "dtype", "vals": ["auto"] },
@@ -27,6 +42,11 @@
         ]
     },
     "validations": {
+        "server_mode": {
+            "description": "server mode: vllm (real inference) or mock (lightweight smoke)",
+            "args": ["server-mode"],
+            "vals": "^vllm$|^mock$"
+        },
         "device_type": {
             "description": "inference device: cpu or cuda",
             "args": ["device"],
