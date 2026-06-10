@@ -98,12 +98,12 @@ vllm_cmd+=" --dtype $dtype"
 if [ "$device" == "cpu" ]; then
     vllm_cmd+=" --device cpu"
     echo "=== CPU MODE ==="
-    validate_sw_prereqs python3
+    validate_sw_prereqs python3 curl
 else
     vllm_cmd+=" --tensor-parallel-size $tensor_parallel_size"
     vllm_cmd+=" --gpu-memory-utilization $gpu_memory_utilization"
     echo "=== GPU MODE ==="
-    validate_sw_prereqs python3 nvidia-smi
+    validate_sw_prereqs python3 nvidia-smi curl
 fi
 
 if [ -n "$quantization" ] && [ "$quantization" != "none" ]; then

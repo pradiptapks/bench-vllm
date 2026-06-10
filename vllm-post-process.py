@@ -9,20 +9,11 @@ import math
 import glob
 from pathlib import Path
 
-TOOLBOX_HOME = os.environ.get('TOOLBOX_HOME')
-if TOOLBOX_HOME is None:
-    print("This script requires libraries that are provided by the toolbox project.")
-    print("Toolbox can be acquired from https://github.com/perftool-incubator/toolbox and")
-    print("then use 'export TOOLBOX_HOME=/path/to/toolbox' so that it can be located.")
-    exit(1)
-else:
-    p = Path(TOOLBOX_HOME) / 'python'
-    if not p.exists() or not p.is_dir():
-        print("ERROR: <TOOLBOX_HOME>/python ('%s') does not exist!" % (p))
-        exit(2)
-    sys.path.append(str(p))
-from toolbox.metrics import log_sample
-from toolbox.metrics import finish_samples
+TOOLBOX_HOME = os.environ.get("TOOLBOX_HOME")
+if TOOLBOX_HOME:
+    sys.path.append(str(Path(TOOLBOX_HOME) / "python"))
+
+from toolbox.cdm_metrics import CDMMetrics
 
 
 def extract_stat(stats, key, percentile):
@@ -46,6 +37,7 @@ def main():
     with open(results_files[0]) as f:
         report = json.load(f)
 
+    metrics = CDMMetrics()
     file_id = "0"
     benchmarks = report.get("benchmarks", [])
 
@@ -79,21 +71,21 @@ def main():
         if val is not None:
             desc = {'source': 'vllm', 'class': 'throughput', 'type': 'output-tokens-per-sec'}
             sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
-            log_sample(file_id, desc, names, sample)
+            metrics.log_sample(file_id, desc, names, sample)
 
         # Requests per second
         val = extract_stat(stats, "requests_per_second", "mean")
         if val is not None:
             desc = {'source': 'vllm', 'class': 'throughput', 'type': 'requests-per-sec'}
             sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
-            log_sample(file_id, desc, names, sample)
+            metrics.log_sample(file_id, desc, names, sample)
 
         # Total tokens per second
         val = extract_stat(stats, "total_tokens_per_second", "mean")
         if val is not None:
             desc = {'source': 'vllm', 'class': 'throughput', 'type': 'total-tokens-per-sec'}
             sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
-            log_sample(file_id, desc, names, sample)
+            metrics.log_sample(file_id, desc, names, sample)
 
         # TTFT (time to first token) -- percentiles in milliseconds
         for pctl in ["mean", "p50", "p90", "p99"]:
@@ -101,7 +93,7 @@ def main():
             if val is not None:
                 desc = {'source': 'vllm', 'class': 'count', 'type': 'ttft-%s-msec' % pctl}
                 sample = {'begin': begin_ms, 'end': end_ms, 'value': val * 1000}
-                log_sample(file_id, desc, names, sample)
+                metrics.log_sample(file_id, desc, names, sample)
 
         # ITL (inter-token latency) -- percentiles in milliseconds
         for pctl in ["mean", "p50", "p90", "p99"]:
@@ -109,7 +101,7 @@ def main():
             if val is not None:
                 desc = {'source': 'vllm', 'class': 'count', 'type': 'itl-%s-msec' % pctl}
                 sample = {'begin': begin_ms, 'end': end_ms, 'value': val * 1000}
-                log_sample(file_id, desc, names, sample)
+                metrics.log_sample(file_id, desc, names, sample)
 
         # E2E request latency -- percentiles in milliseconds
         for pctl in ["mean", "p50", "p90", "p99"]:
@@ -117,9 +109,9 @@ def main():
             if val is not None:
                 desc = {'source': 'vllm', 'class': 'count', 'type': 'e2e-latency-%s-msec' % pctl}
                 sample = {'begin': begin_ms, 'end': end_ms, 'value': val * 1000}
-                log_sample(file_id, desc, names, sample)
+                metrics.log_sample(file_id, desc, names, sample)
 
-    metric_file_name = finish_samples()
+    metric_file_name = metrics.finish_samples()
 
     output = {
         'rickshaw-bench-metric': {'schema': {'version': '2021.04.12'}},

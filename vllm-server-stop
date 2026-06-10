@@ -15,9 +15,11 @@ if [ -e vllm-server.pid ]; then
         echo "Server still running, sending SIGKILL"
         kill -9 $pid
     fi
-    find . -name "*.txt" | while read line; do
-        echo "Compressing: $line"
-        xz -3 -T 0 "$line"
+    for f in vllm-server-output.txt vllm-server-stderrout.txt; do
+        if [ -e "$f" ]; then
+            echo "Compressing: $f"
+            xz -3 -T 0 "$f"
+        fi
     done
 else
     echo "vllm-server.pid not found"
