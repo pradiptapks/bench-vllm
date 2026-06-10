@@ -52,6 +52,9 @@ crucible run run-vllm-gpu-full.json
 
 - [Architecture](docs/architecture.md) -- technical deep-dive, execution flows,
   and telco/NFV use cases
+- [Host Configuration and Tuning](docs/host-configuration.md) -- hardware
+  requirements, OS setup, and performance tuning for server, client, and
+  profiler nodes across CPU and GPU tiers
 - [CLI Reference](docs/cli-reference.md) -- parameter reference with CPU, GPU,
   and OpenShift execution scenarios
 - [Metrics](docs/metrics.md) -- CDM metrics elaboration with SLO mapping
