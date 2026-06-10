@@ -1,0 +1,31 @@
+{
+    "workshop": {
+        "schema": {
+            "version": "2020.03.02"
+        }
+    },
+    "userenvs": [
+        {
+            "name": "default",
+            "requirements": [
+                "vllm-stack"
+            ]
+        },
+        {
+            "name": "rhel-ai",
+            "requirements": []
+        }
+    ],
+    "requirements": [
+        {
+            "name": "vllm-stack",
+            "type": "python3",
+            "python3_info": {
+                "packages": [
+                    "vllm",
+                    "guidellm[recommended]"
+                ]
+            }
+        }
+    ]
+}

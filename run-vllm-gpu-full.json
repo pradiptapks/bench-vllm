@@ -1,0 +1,99 @@
+{
+    "tags": {
+        "topology": "none",
+        "tier": "gpu-full",
+        "workload": "llm-inference-production"
+    },
+    "endpoints": [
+        {
+            "type": "remotehosts",
+            "remotes": [
+                {
+                    "engines": [
+                        { "role": "server", "ids": "1" }
+                    ],
+                    "config": {
+                        "host": "GPU_HOST_HERE",
+                        "settings": {
+                            "controller-ip-address": "CONTROLLER_IP_HERE",
+                            "userenv": "rhel-ai",
+                            "osruntime": "podman",
+                            "podman-settings": {
+                                "device": "nvidia.com/gpu=all",
+                                "shm-size": "16.00gb"
+                            },
+                            "host-mounts": [
+                                { "src": "/home/models", "dest": "/home/models" }
+                            ],
+                            "cpu-partitioning": false
+                        }
+                    }
+                },
+                {
+                    "engines": [
+                        { "role": "client", "ids": "1" }
+                    ],
+                    "config": {
+                        "host": "CLIENT_HOST_HERE",
+                        "settings": {
+                            "controller-ip-address": "CONTROLLER_IP_HERE",
+                            "userenv": "default",
+                            "osruntime": "podman",
+                            "cpu-partitioning": false
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "run-params": {
+        "num-samples": 3,
+        "max-sample-failures": 1,
+        "test-order": "s"
+    },
+    "tool-params": [
+        {
+            "tool": "nvidia",
+            "params": [
+                { "arg": "interval", "val": "5" }
+            ]
+        },
+        {
+            "tool": "sysstat",
+            "params": [
+                { "arg": "subtools", "val": "mpstat,sar,iostat" },
+                { "arg": "interval", "val": "10" }
+            ]
+        },
+        {
+            "tool": "procstat",
+            "params": [
+                { "arg": "interval", "val": "10" }
+            ]
+        }
+    ],
+    "benchmarks": [
+        {
+            "name": "vllm",
+            "ids": "1",
+            "mv-params": {
+                "sets": [
+                    {
+                        "params": [
+                            { "arg": "device", "vals": ["cuda"] },
+                            { "arg": "model", "vals": ["/home/models/Llama-3.1-8B-Instruct"] },
+                            { "arg": "dtype", "vals": ["auto"] },
+                            { "arg": "max-model-len", "vals": ["4096"] },
+                            { "arg": "tensor-parallel-size", "vals": ["2"] },
+                            { "arg": "profile", "vals": ["sweep"] },
+                            { "arg": "rate", "vals": ["10"] },
+                            { "arg": "duration", "vals": ["30"] },
+                            { "arg": "input-tokens", "vals": ["512"] },
+                            { "arg": "output-tokens", "vals": ["256"] }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

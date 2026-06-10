@@ -1,0 +1,47 @@
+{
+    "rickshaw-benchmark": {
+        "schema": {
+            "version": "2020.05.18"
+        }
+    },
+    "benchmark": "vllm",
+    "controller": {
+        "post-script": "%bench-dir%/vllm-post-process.py"
+    },
+    "client": {
+        "files-from-controller": [
+            {
+                "src": "%bench-dir%/vllm-base",
+                "dest": "/usr/bin/"
+            },
+            {
+                "src": "%bench-dir%/vllm-get-runtime",
+                "dest": "/usr/bin/"
+            },
+            {
+                "src": "%bench-dir%/vllm-client",
+                "dest": "/usr/bin/"
+            }
+        ],
+        "runtime": "vllm-get-runtime",
+        "start": "vllm-client"
+    },
+    "server": {
+        "files-from-controller": [
+            {
+                "src": "%bench-dir%/vllm-base",
+                "dest": "/usr/bin/"
+            },
+            {
+                "src": "%bench-dir%/vllm-server-start",
+                "dest": "/usr/bin/"
+            },
+            {
+                "src": "%bench-dir%/vllm-server-stop",
+                "dest": "/usr/bin/"
+            }
+        ],
+        "start": "vllm-server-start",
+        "stop": "vllm-server-stop"
+    }
+}

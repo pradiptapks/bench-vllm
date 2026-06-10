@@ -1,0 +1,75 @@
+{
+    "presets": {
+        "cpu-smoke": [
+            { "arg": "device", "vals": ["cpu"] },
+            { "arg": "model", "vals": ["Qwen/Qwen2.5-1.5B-Instruct"] },
+            { "arg": "dtype", "vals": ["float32"] },
+            { "arg": "max-model-len", "vals": ["512"] },
+            { "arg": "profile", "vals": ["synchronous"] },
+            { "arg": "duration", "vals": ["60"] },
+            { "arg": "input-tokens", "vals": ["128"] },
+            { "arg": "output-tokens", "vals": ["64"] },
+            { "arg": "tensor-parallel-size", "vals": ["1"] },
+            { "arg": "port", "vals": ["8000"] }
+        ],
+        "gpu-full": [
+            { "arg": "device", "vals": ["cuda"] },
+            { "arg": "model", "vals": ["meta-llama/Llama-3.1-8B-Instruct"] },
+            { "arg": "dtype", "vals": ["auto"] },
+            { "arg": "max-model-len", "vals": ["4096"] },
+            { "arg": "profile", "vals": ["sweep"] },
+            { "arg": "rate", "vals": ["10"] },
+            { "arg": "duration", "vals": ["30"] },
+            { "arg": "input-tokens", "vals": ["512"] },
+            { "arg": "output-tokens", "vals": ["256"] },
+            { "arg": "tensor-parallel-size", "vals": ["1"] },
+            { "arg": "port", "vals": ["8000"] }
+        ]
+    },
+    "validations": {
+        "device_type": {
+            "description": "inference device: cpu or cuda",
+            "args": ["device"],
+            "vals": "^cpu$|^cuda$"
+        },
+        "profile_type": {
+            "description": "GuideLLM benchmark profile",
+            "args": ["profile"],
+            "vals": "^synchronous$|^concurrent$|^throughput$|^constant$|^poisson$|^sweep$"
+        },
+        "positive_integer": {
+            "description": "a whole number greater than 0",
+            "args": [
+                "duration",
+                "rate",
+                "max-requests",
+                "input-tokens",
+                "output-tokens",
+                "max-model-len",
+                "tensor-parallel-size",
+                "port"
+            ],
+            "vals": "[1-9][0-9]*"
+        },
+        "model_path": {
+            "description": "a HuggingFace model ID or local path",
+            "args": ["model"],
+            "vals": ".+"
+        },
+        "dtype": {
+            "description": "model data type",
+            "args": ["dtype"],
+            "vals": "^auto$|^float16$|^bfloat16$|^float32$"
+        },
+        "quantization": {
+            "description": "quantization method",
+            "args": ["quantization"],
+            "vals": "^awq$|^gptq$|^fp8$|^none$"
+        },
+        "positive_float": {
+            "description": "a floating point number between 0 and 1",
+            "args": ["gpu-memory-utilization"],
+            "vals": "^0?\\.[0-9]+$|^1\\.0$"
+        }
+    }
+}

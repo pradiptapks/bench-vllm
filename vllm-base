@@ -1,0 +1,8 @@
+#!/bin/bash
+# -*- mode: sh; indent-tabs-mode: nil; sh-basic-offset: 4 -*-
+# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=bash
+
+if ! source ${TOOLBOX_HOME}/bash/library/bench-base; then
+    echo "ERROR: Could not source bench-base from \$TOOLBOX_HOME [${TOOLBOX_HOME}]"
+    exit 1
+fi
