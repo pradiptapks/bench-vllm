@@ -17,7 +17,7 @@
                         "host": "localhost",
                         "settings": {
                             "controller-ip-address": "CONTROLLER_IP_HERE",
-                            "userenv": "default",
+                            "userenv": "stream9",
                             "osruntime": "podman",
                             "cpu-partitioning": false
                         }

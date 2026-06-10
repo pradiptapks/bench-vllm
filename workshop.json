@@ -12,6 +12,12 @@
             ]
         },
         {
+            "name": "stream9",
+            "requirements": [
+                "vllm-stack"
+            ]
+        },
+        {
             "name": "rhel-ai",
             "requirements": []
         }
