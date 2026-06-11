@@ -165,10 +165,16 @@ Total: ~1-2 minutes (after first-time image build)
 | ttft-mean-msec | < 50 ms |
 | e2e-latency-mean-msec | < 500 ms |
 
-These values confirm the pipeline works end-to-end. They reflect
+These values are based on actual validated runs on x86_64 hardware
+(Intel Xeon). They confirm the pipeline works end-to-end and reflect
 mock server performance, not real inference.
 
 ## Execution Flow: CPU Functional (Real Inference)
+
+> **Not yet validated.** This execution flow is designed based on vLLM
+> and GuideLLM specifications. Parameters, timings, and expected metric
+> ranges below are estimates and may require adjustment after hardware
+> validation.
 
 The CPU functional tier validates real vLLM inference on CPU with
 a small model. Intended for functional validation, not performance
@@ -221,10 +227,16 @@ Total: ~8 minutes (after first-time image build)
 | ttft-mean-msec | 2000-5000 ms |
 | e2e-latency-mean-msec | 10000-30000 ms |
 
-These values confirm real inference works. They are not
-production-representative.
+These values are estimates based on vLLM documentation for CPU
+inference with small models. They are not production-representative
+and have not been verified through bench-vllm runs.
 
 ## Execution Flow: GPU Full
+
+> **Not yet validated.** This execution flow is designed based on vLLM
+> GPU serving documentation and GuideLLM sweep profile specifications.
+> All timings, expected metric ranges, and hardware references below
+> are estimates and have not been verified through bench-vllm runs.
 
 The GPU full tier measures real inference performance under
 production-like load using GuideLLM's sweep profile.
@@ -281,6 +293,12 @@ The sweep produces a throughput-vs-latency curve showing where
 performance degrades as load increases.
 
 ## Real-Time NFV and Telco Use Cases
+
+> **Note**: The use cases below describe intended applications of
+> bench-vllm. The GPU-dependent capabilities (sweep profiles, SLO
+> validation, hardware right-sizing) have not yet been validated on
+> hardware. These sections describe the design intent and will be
+> updated with validated guidance as GPU testing is completed.
 
 ### AI-RAN Workload Validation
 

@@ -6,6 +6,20 @@ inference serving benchmarks within the
 framework, using [GuideLLM](https://github.com/vllm-project/guidellm) as the
 load generator.
 
+## Validation Status
+
+| Tier | Status | Hardware Tested |
+|------|--------|-----------------|
+| **CPU Smoke** (mock server) | **Validated** | x86_64 (Intel Xeon, Fedora) |
+| **CPU Functional** (real vLLM CPU) | Designed, not yet tested | -- |
+| **GPU Full** (production GPU) | Designed, not yet tested | -- |
+
+> **Note**: Only the CPU smoke tier has been validated end-to-end on hardware.
+> The CPU functional and GPU full tiers are designed and documented based on
+> vLLM and GuideLLM specifications but have not yet been executed. Parameters,
+> expected metric ranges, and configurations for those tiers may require
+> adjustment once hardware validation is performed.
+
 ## Overview
 
 bench-vllm is a client-server benchmark that measures LLM inference serving
@@ -16,11 +30,11 @@ measure throughput, latency, and token-level timing metrics.
 Three testing tiers are supported:
 
 - **CPU Smoke** (`examples/run-vllm-cpu-smoke.json`): fast pipeline validation
-  using a mock server (~1 min), no real model required
+  using a mock server (~1 min), no real model required -- **validated**
 - **CPU Functional** (`examples/run-vllm-cpu-functional.json`): real CPU
-  inference with a small model for functional validation
+  inference with a small model for functional validation -- *not yet tested*
 - **GPU Full** (`examples/run-vllm-gpu-full.json`): production performance
-  testing with GuideLLM's sweep profile on GPU-equipped hosts
+  testing with GuideLLM's sweep profile on GPU-equipped hosts -- *not yet tested*
 
 ## Key Files
 

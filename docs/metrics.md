@@ -43,7 +43,8 @@ directly measures the inference server's productive work output.
 - Drops sharply when the server becomes saturated
 - Directly maps to "tokens served per dollar" for cost analysis
 - A100-80GB with Llama 3.1 8B typically produces 500-3000 tok/s
-  depending on batch size and concurrency
+  depending on batch size and concurrency *(estimate from vLLM
+  documentation, not yet verified through bench-vllm runs)*
 
 ### requests-per-sec
 
@@ -82,7 +83,8 @@ interactive applications.
 **Interpretation**:
 - Directly determines perceived responsiveness in streaming UIs
 - For telco intent-based networking CLIs: TTFT p99 < 500ms is
-  typically required for acceptable user experience
+  typically required for acceptable user experience *(target
+  based on industry references, not yet validated with bench-vllm)*
 - Increases with prompt length (more prefill computation)
 - Increases under load as requests queue
 
@@ -95,7 +97,8 @@ generation. This determines the "streaming speed" of responses.
 
 **Interpretation**:
 - Determines how smooth the text stream appears to users
-- Typical values on GPU: 5-20ms mean, 20-100ms p99
+- Typical values on GPU: 5-20ms mean, 20-100ms p99 *(estimate
+  from vLLM benchmarks, not yet verified through bench-vllm runs)*
 - Spikes indicate GPU memory pressure or scheduling contention
 - For real-time applications (AI-RAN), ITL stability matters more
   than mean ITL
@@ -134,6 +137,12 @@ Each latency metric is reported at four percentile levels:
 
 ## Correlated Tool Metrics
 
+> **Note**: GPU and power tool correlations described below require
+> GPU hardware with the nvidia and power tools configured. These
+> correlations have not yet been validated through bench-vllm runs.
+> The sysstat and procstat correlations have been validated with the
+> CPU smoke tier.
+
 bench-vllm metrics become most valuable when correlated with
 system-level data from Crucible's tool subprojects:
 
@@ -163,6 +172,10 @@ system-level data from Crucible's tool subprojects:
 
 ## SLO Mapping
 
+> **Not yet validated.** The SLO validation scenarios below describe
+> intended bench-vllm capabilities using GPU inference with constant
+> and sweep profiles. These have not been tested on hardware.
+
 Common telco SLO examples and how to validate them with bench-vllm:
 
 | SLO Requirement | bench-vllm Metric | How to Validate |
@@ -173,6 +186,10 @@ Common telco SLO examples and how to validate them with bench-vllm:
 | "Handle 20 concurrent users" | `requests-per-sec` at `concurrent` rate=20 | Run with `--profile concurrent --rate 20`, verify no errors |
 
 ## Interpreting Sweep Results
+
+> **Not yet validated.** The sweep profile interpretation below is
+> based on GuideLLM documentation. Sweep functionality requires GPU
+> hardware and has not been tested through bench-vllm runs.
 
 The `sweep` profile produces multiple benchmark entries, each at a
 different load level. When plotted, this creates a throughput-latency

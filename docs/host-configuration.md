@@ -9,6 +9,12 @@ collection tools).
 Configurations are provided for both the CPU smoke tier (Phase 1)
 and the GPU full tier (Phase 2/3).
 
+> **Note**: CPU smoke tier configurations have been validated on
+> x86_64 hardware. GPU full tier configurations are based on general
+> vLLM, NVIDIA, and CUDA documentation and have not yet been
+> verified through bench-vllm runs. GPU-specific sections are marked
+> accordingly.
+
 ---
 
 ## Role Overview
@@ -123,6 +129,11 @@ firewall-cmd --reload
 ```
 
 ### 1.2 GPU Full Tier (Phase 2/3)
+
+> **Not yet validated.** Hardware requirements, GPU sizing, driver
+> configuration, NUMA tuning, and shared memory settings below are
+> based on vLLM and NVIDIA documentation. They have not been tested
+> through bench-vllm runs and may require adjustment.
 
 #### Minimum Hardware
 
@@ -280,6 +291,10 @@ over localhost.
 
 ### 2.2 GPU Full Tier (Separate Node)
 
+> **Not yet validated.** Client sizing and network tuning below are
+> based on GuideLLM requirements and have not been tested with
+> bench-vllm GPU runs.
+
 When running on a dedicated node (recommended for accurate latency
 measurement):
 
@@ -356,6 +371,10 @@ in the topology.
 | tool-ethtool | Optional | Optional | Optional |
 
 ### 3.2 tool-nvidia Requirements
+
+> **Not yet validated with bench-vllm.** tool-nvidia integration
+> is based on existing Crucible tool infrastructure but has not
+> been tested in the context of bench-vllm GPU runs.
 
 tool-nvidia requires the `pynvml` Python package (installed
 automatically via `workshop.json` in the engine image) and access
@@ -490,6 +509,8 @@ All roles on one host. Simplest setup.
 
 ### Two-Node (GPU Full, Recommended)
 
+> **Not yet validated.** This topology is a design recommendation.
+
 Server on GPU node, client + controller on a second node.
 
 ```
@@ -508,6 +529,8 @@ Server on GPU node, client + controller on a second node.
 ```
 
 ### Three-Node (Production)
+
+> **Not yet validated.** This topology is a design recommendation.
 
 Full isolation of all roles.
 
@@ -606,7 +629,7 @@ cat ~/.crucible/identity
 | Disk | Use SSD for model cache | Faster model download caching |
 | Network | None required (localhost) | N/A |
 
-### GPU Full Tier
+### GPU Full Tier *(not yet validated)*
 
 | Tuning Area | Action | Impact |
 |-------------|--------|--------|

@@ -62,6 +62,9 @@ Fast pipeline validation using mock server. No real model needed.
 
 ### cpu-functional
 
+> **Not yet validated on hardware.** Parameters are based on vLLM
+> CPU inference documentation and may need adjustment.
+
 Real CPU inference with a small model for functional validation.
 
 ```json
@@ -77,6 +80,9 @@ Real CPU inference with a small model for functional validation.
 ```
 
 ### gpu-full
+
+> **Not yet validated on hardware.** Parameters are based on vLLM
+> GPU serving documentation and may need adjustment after testing.
 
 Production configuration for GPU performance testing.
 
@@ -139,6 +145,9 @@ crucible get metric --run <run-id> --source vllm --type output-tokens-per-sec
 
 ## CPU Functional Execution Scenario
 
+> **Not yet validated.** This scenario is designed but has not been
+> tested on hardware. Expected durations and behavior may differ.
+
 ### Prerequisites
 
 - Any x86_64 Linux host with podman, git, jq installed
@@ -165,6 +174,11 @@ crucible run run-vllm-cpu-functional.json
 - Subsequent runs: ~8 minutes (cached image and model)
 
 ## GPU Execution Scenario
+
+> **Not yet validated.** This scenario is designed based on vLLM GPU
+> serving documentation. Hardware requirements, run file configuration,
+> and sweep interpretation guidance have not been verified through
+> bench-vllm runs and may require adjustment.
 
 ### Prerequisites
 
@@ -223,6 +237,11 @@ crucible get metric --run <run-id> --source nvidia --type util
 ```
 
 ## OpenShift Execution Scenario
+
+> **Not yet validated.** This scenario is a design reference for
+> Kubernetes/OpenShift deployments. It has not been tested and the
+> endpoint configuration may need adjustment for specific cluster
+> setups.
 
 For OpenShift deployments, use the `kube` endpoint type:
 
@@ -295,6 +314,11 @@ every 5 seconds. Only active on nodes with NVIDIA GPUs.
 ```
 
 ## Troubleshooting
+
+> **Note**: Troubleshooting entries for GPU-specific issues (OOM,
+> tensor parallelism) are based on general vLLM documentation and
+> have not been encountered or verified through bench-vllm runs.
+> The CDM indexing failure entry is based on an actual resolved issue.
 
 ### Server startup timeout
 

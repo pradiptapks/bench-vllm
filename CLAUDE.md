@@ -52,11 +52,15 @@ server-specific params to not reach the server engine.
 
 ## Test Tiers
 
-| Tier | `server-mode` | Userenv | Model | Duration | Purpose |
-|------|---------------|---------|-------|----------|---------|
-| `cpu-smoke` | `mock` | `fedora-latest` | `mock-model` | 30s | Fast pipeline validation (~1 min total), no real model |
-| `cpu-functional` | `vllm` | `stream9` | `Qwen/Qwen2.5-1.5B-Instruct` | 60s | Real CPU inference with a small model |
-| `gpu-full` | `vllm` | `rhel-ai`/`stream9` | Llama 3.1 8B+ | 30s | Production GPU benchmarking with sweep profile |
+| Tier | `server-mode` | Userenv | Model | Duration | Purpose | Status |
+|------|---------------|---------|-------|----------|---------|--------|
+| `cpu-smoke` | `mock` | `fedora-latest` | `mock-model` | 30s | Fast pipeline validation (~1 min total), no real model | **Validated** |
+| `cpu-functional` | `vllm` | `stream9` | `Qwen/Qwen2.5-1.5B-Instruct` | 60s | Real CPU inference with a small model | Not yet tested |
+| `gpu-full` | `vllm` | `rhel-ai`/`stream9` | Llama 3.1 8B+ | 30s | Production GPU benchmarking with sweep profile | Not yet tested |
+
+> Only `cpu-smoke` has been validated on hardware. The `cpu-functional` and
+> `gpu-full` tiers are designed based on vLLM/GuideLLM specs and may need
+> adjustment after hardware validation.
 
 ## GuideLLM CLI Notes
 

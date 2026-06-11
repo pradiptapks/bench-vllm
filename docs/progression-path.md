@@ -4,11 +4,16 @@ bench-vllm is designed for a three-phase testing progression, from
 initial framework validation through production performance
 measurement to advanced multi-dimensional analysis.
 
-## Phase 1: Framework Validation (CPU Smoke)
+## Phase 1: Framework Validation (CPU Smoke) -- **Validated**
 
 **Goal**: Validate that the benchmark pipeline works end-to-end on
 any available x86 host without requiring GPU hardware or downloading
 a real model.
+
+> **Status**: Completed. Validated on x86_64 hardware (Intel Xeon,
+> Fedora). All success criteria met -- pipeline runs end-to-end,
+> CDM metrics indexed successfully, ~282 output-tokens/sec with
+> mock server.
 
 ### Scope
 
@@ -58,7 +63,12 @@ setting `controller-ip-address` and `host` to actual values.
 
 ---
 
-## Phase 2: Production Performance (GPU Full)
+## Phase 2: Production Performance (GPU Full) -- *Not Yet Started*
+
+> **Status**: Designed, not yet tested. All parameters, expected
+> metrics, deliverables, and success criteria below are based on
+> vLLM and GuideLLM documentation. They may require adjustment
+> after hardware validation. Requires NVIDIA GPU hardware.
 
 **Goal**: Measure real inference performance under production-like
 load using GPU-accelerated inference.
@@ -112,7 +122,12 @@ hostnames, controller IP, and model path.
 
 ---
 
-## Phase 3: Advanced Analysis
+## Phase 3: Advanced Analysis -- *Not Yet Started*
+
+> **Status**: Designed, not yet tested. Requires Phase 2 completion
+> first. Test matrices, deliverables, and success criteria below are
+> design targets based on vLLM capabilities and may need significant
+> refinement after initial GPU validation.
 
 **Goal**: Multi-dimensional performance characterization for
 deployment optimization decisions.
