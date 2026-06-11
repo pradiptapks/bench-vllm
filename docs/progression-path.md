@@ -7,28 +7,30 @@ measurement to advanced multi-dimensional analysis.
 ## Phase 1: Framework Validation (CPU Smoke)
 
 **Goal**: Validate that the benchmark pipeline works end-to-end on
-any available x86 host without requiring GPU hardware.
+any available x86 host without requiring GPU hardware or downloading
+a real model.
 
 ### Scope
 
 | Dimension | Value |
 |-----------|-------|
 | **Hardware** | Any x86_64 CPU host (e.g., NFV compute nodes, dev workstations) |
-| **Device** | `cpu` |
-| **Model** | Qwen2.5-1.5B-Instruct (~3 GB RAM) |
+| **Server Mode** | `mock` (lightweight OpenAI-compatible mock server) |
+| **Userenv** | `fedora-latest` |
+| **Model** | `mock-model` (no download required) |
 | **Profile** | `synchronous` (1 request at a time) |
-| **Duration** | 60 seconds |
+| **Duration** | 30 seconds |
 | **Samples** | 1 |
 | **Iterations** | 1 |
-| **Total runtime** | ~8 minutes (after first image build) |
+| **Total runtime** | ~1-2 minutes (after first image build) |
 | **Tools** | sysstat, procstat |
 
 ### What This Phase Validates
 
-- vllm-server-start launches and serves the model on CPU
+- vllm-server-start launches mock server and serves /health
 - Server publishes service info via roadblock messaging
 - vllm-client discovers the server and connects
-- GuideLLM sends requests and records results
+- GuideLLM sends requests and records results (using gpt2 tokenizer)
 - vllm-post-process.py parses GuideLLM output into CDM metrics
 - post-process-data.json is written with correct schema
 - Crucible indexes metrics successfully
@@ -36,15 +38,15 @@ any available x86 host without requiring GPU hardware.
 
 ### What This Phase Does NOT Validate
 
-- Production-representative throughput numbers (CPU is 100-500x
-  slower than GPU for LLM inference)
+- Real model loading or inference behavior
+- Production-representative throughput numbers
 - GPU utilization or power metrics
 - Behavior under concurrent load
 - Sweep profile discovery of performance limits
 
 ### Example Run File
 
-Use `run-vllm-cpu-smoke.json` from the project root. Requires only
+Use `examples/run-vllm-cpu-smoke.json` from the project. Requires only
 setting `controller-ip-address` and `host` to actual values.
 
 ### Success Criteria
@@ -96,7 +98,7 @@ load using GPU-accelerated inference.
 
 ### Example Run File
 
-Use `run-vllm-gpu-full.json` from the project root. Requires setting
+Use `examples/run-vllm-gpu-full.json` from the project. Requires setting
 hostnames, controller IP, and model path.
 
 ### Success Criteria

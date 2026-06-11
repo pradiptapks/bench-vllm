@@ -13,9 +13,9 @@
                         { "role": "server", "ids": "1" }
                     ],
                     "config": {
-                        "host": "GPU_HOST_HERE",
+                        "host": "YOUR_GPU_HOST_HERE",
                         "settings": {
-                            "controller-ip-address": "CONTROLLER_IP_HERE",
+                            "controller-ip-address": "YOUR_CONTROLLER_IP_HERE",
                             "userenv": "rhel-ai",
                             "osruntime": "podman",
                             "podman-settings": {
@@ -34,9 +34,9 @@
                         { "role": "client", "ids": "1" }
                     ],
                     "config": {
-                        "host": "CLIENT_HOST_HERE",
+                        "host": "YOUR_CLIENT_HOST_HERE",
                         "settings": {
-                            "controller-ip-address": "CONTROLLER_IP_HERE",
+                            "controller-ip-address": "YOUR_CONTROLLER_IP_HERE",
                             "userenv": "stream9",
                             "osruntime": "podman",
                             "cpu-partitioning": false
@@ -80,17 +80,17 @@
                 "sets": [
                     {
                         "params": [
-                            { "arg": "server-mode", "vals": ["vllm"] },
-                            { "arg": "device", "vals": ["cuda"] },
-                            { "arg": "model", "vals": ["/home/models/Llama-3.1-8B-Instruct"] },
-                            { "arg": "dtype", "vals": ["auto"] },
-                            { "arg": "max-model-len", "vals": ["4096"] },
-                            { "arg": "tensor-parallel-size", "vals": ["2"] },
-                            { "arg": "profile", "vals": ["sweep"] },
-                            { "arg": "rate", "vals": ["10"] },
-                            { "arg": "duration", "vals": ["30"] },
-                            { "arg": "input-tokens", "vals": ["512"] },
-                            { "arg": "output-tokens", "vals": ["256"] }
+                            { "arg": "server-mode", "vals": ["vllm"], "role": "server" },
+                            { "arg": "device", "vals": ["cuda"], "role": "server" },
+                            { "arg": "model", "vals": ["/home/models/Llama-3.1-8B-Instruct"], "role": "all" },
+                            { "arg": "dtype", "vals": ["auto"], "role": "server" },
+                            { "arg": "max-model-len", "vals": ["4096"], "role": "server" },
+                            { "arg": "tensor-parallel-size", "vals": ["2"], "role": "server" },
+                            { "arg": "profile", "vals": ["sweep"], "role": "client" },
+                            { "arg": "rate", "vals": ["10"], "role": "client" },
+                            { "arg": "duration", "vals": ["30"], "role": "client" },
+                            { "arg": "input-tokens", "vals": ["512"], "role": "client" },
+                            { "arg": "output-tokens", "vals": ["256"], "role": "client" }
                         ]
                     }
                 ]

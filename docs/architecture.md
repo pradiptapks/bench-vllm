@@ -48,21 +48,21 @@ orchestrated by rickshaw.
 ```
                           Crucible Controller
                      ┌──────────────────────────┐
-                     │  rickshaw orchestration   │
-                     │  vllm-post-process.py     │
-                     │  CDM metric indexing      │
+                     │  rickshaw orchestration  │
+                     │  vllm-post-process.py    │
+                     │  CDM metric indexing     │
                      └─────────┬────────────────┘
                                │
-              ┌────────────────┼────────────────┐
-              │                │                │
-     ┌────────▼──────┐  ┌─────▼──────┐  ┌──────▼───────┐
+              ┌────────────────┼─────────────────┐
+              │                │                 │
+     ┌────────▼───────┐  ┌─────▼───────┐  ┌──────▼────────┐
      │ Server Engine  │  │Client Engine│  │Profiler Engine│
-     │                │  │            │  │              │
-     │ vllm serve     │  │ guidellm   │  │ tool-nvidia  │
-     │ (model loaded) │  │ benchmark  │  │ tool-sysstat │
-     │                │  │            │  │ tool-procstat│
-     │ port 8000      │◄─┤ HTTP reqs  │  │ tool-power   │
-     └────────────────┘  └────────────┘  └──────────────┘
+     │                │  │             │  │               │
+     │ vllm serve     │  │ guidellm    │  │ tool-nvidia   │
+     │ (model loaded) │  │ benchmark   │  │ tool-sysstat  │
+     │                │  │             │  │ tool-procstat │
+     │ port 8000      │◄─┤ HTTP reqs   │  │ tool-power    │
+     └────────────────┘  └─────────────┘  └───────────────┘
 ```
 
 ### Client-Server Interaction Flow
@@ -111,22 +111,78 @@ Red Hat. It serves as the client-side load generator and provides:
 The benchmark wraps GuideLLM's CLI output (`benchmarks.json`) and
 transforms it into Crucible CDM metrics via `vllm-post-process.py`.
 
-## Execution Flow: CPU Smoke
+## Execution Flow: CPU Smoke (Mock Server)
 
 The CPU smoke tier validates the benchmark pipeline on any x86 host
-without a GPU. This is intended for framework validation, not
-performance measurement.
+without a GPU or real model download. It uses a lightweight mock
+OpenAI-compatible server instead of real vLLM inference.
 
 ```
 Time   Action
 ─────  ────────────────────────────────────────────────────
-0:00   crucible run run-vllm-cpu-smoke.json
+0:00   crucible run examples/run-vllm-cpu-smoke.json
        → Validates params against multiplex.json
+       → Workshop builds engine image (pip install guidellm only)
+         First-time build: ~5 min (cached after)
+
+0:05   Rickshaw deploys server engine container
+       → vllm-server-start runs with --server-mode mock
+       → Launches vllm-mock-server.py (stdlib-only, instant start)
+       → Polls /health until ready (~1 second)
+
+0:05   Server publishes IP:port via msgs/tx/svc
+       → Roadblock delivers to client
+
+0:05   Client engine starts
+       → vllm-client reads server address from msgs/rx/
+       → Runs: guidellm benchmark --target http://server:8000
+         --profile synchronous --max-seconds 30
+         --data prompt_tokens=64,output_tokens=32
+         --processor gpt2 --model mock-model
+
+0:05   GuideLLM sends requests sequentially (1 at a time)
+       → Mock server responds instantly with token-aware output
+       → Hundreds of requests complete in 30 seconds
+       → Writes guidellm-results/benchmarks.json
+
+0:35   Client exits, server stopped and compressed
+
+0:36   Controller runs vllm-post-process.py
+       → Parses benchmarks.json
+       → Logs CDM metrics via toolbox
+
+0:37   Run complete, metrics indexed
+─────  ────────────────────────────────────────────────────
+Total: ~1-2 minutes (after first-time image build)
+```
+
+**Expected output metrics (mock server):**
+
+| Metric | Expected Range |
+|--------|---------------|
+| output-tokens-per-sec | 100-1000+ tok/s |
+| requests-per-sec | 5-50+ req/s |
+| ttft-mean-msec | < 50 ms |
+| e2e-latency-mean-msec | < 500 ms |
+
+These values confirm the pipeline works end-to-end. They reflect
+mock server performance, not real inference.
+
+## Execution Flow: CPU Functional (Real Inference)
+
+The CPU functional tier validates real vLLM inference on CPU with
+a small model. Intended for functional validation, not performance
+measurement.
+
+```
+Time   Action
+─────  ────────────────────────────────────────────────────
+0:00   crucible run examples/run-vllm-cpu-functional.json
        → Workshop builds engine image (pip install vllm, guidellm)
          First-time build: ~10-15 min (cached after)
 
 0:15   Rickshaw deploys server engine container
-       → vllm-server-start runs
+       → vllm-server-start runs with --server-mode vllm --device cpu
        → Downloads Qwen2.5-1.5B model (~3 GB, one-time)
        → Loads model to CPU RAM (~2-3 min)
        → Polls /health until ready
@@ -136,9 +192,9 @@ Time   Action
 
 0:20   Client engine starts
        → vllm-client reads server address from msgs/rx/
-       → Runs: guidellm benchmark --profile kind=synchronous
-         --max-seconds 60 --data kind=synthetic_text,
-         prompt_tokens=128,output_tokens=64
+       → Runs: guidellm benchmark --profile synchronous
+         --max-seconds 60 --data prompt_tokens=128,output_tokens=64
+         --processor Qwen/Qwen2.5-1.5B-Instruct
 
 0:20   GuideLLM sends requests sequentially (1 at a time)
        → Each request takes ~5-30 seconds on CPU
@@ -156,7 +212,7 @@ Time   Action
 Total: ~8 minutes (after first-time image build)
 ```
 
-**Expected output metrics (CPU):**
+**Expected output metrics (real CPU inference):**
 
 | Metric | Expected Range |
 |--------|---------------|
@@ -165,7 +221,7 @@ Total: ~8 minutes (after first-time image build)
 | ttft-mean-msec | 2000-5000 ms |
 | e2e-latency-mean-msec | 10000-30000 ms |
 
-These values confirm the pipeline works. They are not
+These values confirm real inference works. They are not
 production-representative.
 
 ## Execution Flow: GPU Full
@@ -176,19 +232,19 @@ production-like load using GuideLLM's sweep profile.
 ```
 Time   Action
 ─────  ────────────────────────────────────────────────────
-0:00   crucible run run-vllm-gpu-full.json
+0:00   crucible run examples/run-vllm-gpu-full.json
        → Workshop builds engine image (rhel-ai userenv,
          vllm pre-installed)
 
 0:02   Server engine deployed to GPU node
-       → vllm-server-start runs with --device cuda
+       → vllm-server-start runs with --server-mode vllm --device cuda
        → Loads Llama 3.1 8B to GPU VRAM (~30-60s)
        → Polls /health until ready
 
 0:03   Server publishes service info
        → Client engine deployed to separate node
 
-0:03   GuideLLM sweep begins (--profile kind=sweep --rate 10)
+0:03   GuideLLM sweep begins (--profile sweep --rate 10)
        → Benchmark 1: synchronous (baseline, 1 req at a time)
        → Benchmark 2: throughput (max capacity, no rate limit)
        → Benchmarks 3-10: intermediate rate points
@@ -202,7 +258,7 @@ Time   Action
 
 0:22   Controller runs vllm-post-process.py
        → Parses all benchmark entries from sweep
-       → Logs per-benchmark metrics with profile labels
+       → Logs per-benchmark metrics to CDM
 
 0:23   Run complete, metrics indexed
 ─────  ────────────────────────────────────────────────────

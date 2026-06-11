@@ -24,8 +24,9 @@ toolbox `log_sample` / `finish_samples` API.
 | `vllm` | `count` | `e2e-latency-p90-msec` | ms | End-to-end request latency (90th percentile) |
 | `vllm` | `count` | `e2e-latency-p99-msec` | ms | End-to-end request latency (99th percentile) |
 
-All metrics carry a `profile` name tag indicating which GuideLLM
-profile produced them (e.g., `synchronous`, `throughput`, `constant`).
+All metrics are indexed per benchmark entry from GuideLLM's output.
+When using the `sweep` profile, multiple entries are produced (one
+per load level), resulting in multiple CDM metric samples per run.
 
 ## Throughput Metrics
 

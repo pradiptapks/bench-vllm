@@ -1,7 +1,7 @@
 {
     "tags": {
         "topology": "none",
-        "tier": "cpu-smoke",
+        "tier": "cpu-functional",
         "workload": "llm-inference-validation"
     },
     "endpoints": [
@@ -14,10 +14,10 @@
                         { "role": "client", "ids": "1" }
                     ],
                     "config": {
-                        "host": "localhost",
+                        "host": "YOUR_HOST_HERE",
                         "settings": {
-                            "controller-ip-address": "CONTROLLER_IP_HERE",
-                            "userenv": "fedora-latest",
+                            "controller-ip-address": "YOUR_CONTROLLER_IP_HERE",
+                            "userenv": "stream9",
                             "osruntime": "podman",
                             "cpu-partitioning": false
                         }
@@ -54,15 +54,15 @@
                 "sets": [
                     {
                         "params": [
-                            { "arg": "server-mode", "vals": ["mock"] },
-                            { "arg": "device", "vals": ["cpu"] },
-                            { "arg": "model", "vals": ["mock-model"] },
-                            { "arg": "dtype", "vals": ["float32"] },
-                            { "arg": "max-model-len", "vals": ["256"] },
-                            { "arg": "profile", "vals": ["synchronous"] },
-                            { "arg": "duration", "vals": ["30"] },
-                            { "arg": "input-tokens", "vals": ["64"] },
-                            { "arg": "output-tokens", "vals": ["32"] }
+                            { "arg": "server-mode", "vals": ["vllm"], "role": "server" },
+                            { "arg": "device", "vals": ["cpu"], "role": "server" },
+                            { "arg": "model", "vals": ["Qwen/Qwen2.5-1.5B-Instruct"], "role": "all" },
+                            { "arg": "dtype", "vals": ["float32"], "role": "server" },
+                            { "arg": "max-model-len", "vals": ["512"], "role": "server" },
+                            { "arg": "profile", "vals": ["synchronous"], "role": "client" },
+                            { "arg": "duration", "vals": ["60"], "role": "client" },
+                            { "arg": "input-tokens", "vals": ["128"], "role": "client" },
+                            { "arg": "output-tokens", "vals": ["64"], "role": "client" }
                         ]
                     }
                 ]

@@ -94,11 +94,11 @@ echo "Output tokens: ${output_tokens}"
 
 guidellm_cmd="guidellm benchmark"
 guidellm_cmd+=" --target ${base_url}"
-guidellm_cmd+=" --profile kind=${profile}"
+guidellm_cmd+=" --profile ${profile}"
 guidellm_cmd+=" --max-seconds ${duration}"
-guidellm_cmd+=" --data kind=synthetic_text,prompt_tokens=${input_tokens},output_tokens=${output_tokens}"
+guidellm_cmd+=" --data prompt_tokens=${input_tokens},output_tokens=${output_tokens}"
 guidellm_cmd+=" --output-dir ./guidellm-results"
-guidellm_cmd+=" --outputs json"
+guidellm_cmd+=" --outputs benchmarks.json"
 guidellm_cmd+=" --random-seed 42"
 
 if [ -n "$rate" ]; then
@@ -109,6 +109,11 @@ if [ -n "$max_requests" ]; then
 fi
 if [ -n "$model" ]; then
     guidellm_cmd+=" --model $model"
+    if [[ "$model" == */* ]]; then
+        guidellm_cmd+=" --processor $model"
+    else
+        guidellm_cmd+=" --processor gpt2"
+    fi
 fi
 
 echo "Running: $guidellm_cmd"

@@ -206,7 +206,7 @@ mount -o remount,size=16G /dev/shm
 echo "tmpfs /dev/shm tmpfs defaults,size=16G 0 0" >> /etc/fstab
 ```
 
-The `run-vllm-gpu-full.json` run file sets `"shm-size": "16.00gb"`
+The `examples/run-vllm-gpu-full.json` run file sets `"shm-size": "16.00gb"`
 in podman-settings to handle this inside the container.
 
 #### Model Weight Storage

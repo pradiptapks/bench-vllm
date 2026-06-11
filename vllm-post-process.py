@@ -16,13 +16,23 @@ if TOOLBOX_HOME:
 from toolbox.cdm_metrics import CDMMetrics
 
 
-def extract_stat(stats, key, percentile):
-    """Safely extract a statistical value from the GuideLLM stats dict."""
-    if key not in stats:
+def get_metric_val(metrics, metric_name, stat_key, category="successful"):
+    """Extract a value from the GuideLLM metrics structure.
+
+    Schema: metrics[metric_name][category][stat_key]
+    For percentiles: metrics[metric_name][category]["percentiles"][stat_key]
+    """
+    section = metrics.get(metric_name)
+    if not section:
         return None
-    section = stats[key]
-    if isinstance(section, dict) and percentile in section:
-        return section[percentile]
+    cat = section.get(category)
+    if not cat:
+        return None
+    if stat_key in cat:
+        return cat[stat_key]
+    pctls = cat.get("percentiles", {})
+    if stat_key in pctls:
+        return pctls[stat_key]
     return None
 
 
@@ -31,13 +41,13 @@ def main():
 
     results_files = glob.glob("guidellm-results/benchmarks.json")
     if not results_files:
-        print("No guidellm benchmarks.json found")
-        return 1
+        print("No guidellm benchmarks.json found, nothing to process")
+        return 0
 
     with open(results_files[0]) as f:
         report = json.load(f)
 
-    metrics = CDMMetrics()
+    cdm = CDMMetrics()
     file_id = "0"
     benchmarks = report.get("benchmarks", [])
 
@@ -46,9 +56,9 @@ def main():
         return 1
 
     for bench in benchmarks:
-        stats = bench.get("statistics", {})
-        if not stats:
-            print("No statistics in benchmark entry, skipping")
+        metrics = bench.get("metrics")
+        if not metrics:
+            print("No metrics in benchmark entry, skipping")
             continue
 
         start_time = bench.get("start_time", 0)
@@ -61,57 +71,58 @@ def main():
         end_ms = int(math.floor(end_time * 1000))
 
         profile_kind = "unknown"
-        profile = bench.get("profile", {})
-        if isinstance(profile, dict):
-            profile_kind = profile.get("kind", "unknown")
-        names = {"profile": profile_kind}
+        config = bench.get("config", {})
+        strategy = config.get("strategy", {})
+        if isinstance(strategy, dict):
+            profile_kind = strategy.get("type_", "unknown")
+        names = {}
 
         # Output tokens per second (primary throughput metric)
-        val = extract_stat(stats, "output_tokens_per_second", "mean")
+        val = get_metric_val(metrics, "output_tokens_per_second", "mean")
         if val is not None:
             desc = {'source': 'vllm', 'class': 'throughput', 'type': 'output-tokens-per-sec'}
             sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
-            metrics.log_sample(file_id, desc, names, sample)
+            cdm.log_sample(file_id, desc, names, sample)
 
         # Requests per second
-        val = extract_stat(stats, "requests_per_second", "mean")
+        val = get_metric_val(metrics, "requests_per_second", "mean")
         if val is not None:
             desc = {'source': 'vllm', 'class': 'throughput', 'type': 'requests-per-sec'}
             sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
-            metrics.log_sample(file_id, desc, names, sample)
+            cdm.log_sample(file_id, desc, names, sample)
 
         # Total tokens per second
-        val = extract_stat(stats, "total_tokens_per_second", "mean")
+        val = get_metric_val(metrics, "tokens_per_second", "mean")
         if val is not None:
             desc = {'source': 'vllm', 'class': 'throughput', 'type': 'total-tokens-per-sec'}
             sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
-            metrics.log_sample(file_id, desc, names, sample)
+            cdm.log_sample(file_id, desc, names, sample)
 
-        # TTFT (time to first token) -- percentiles in milliseconds
+        # TTFT (time to first token) — GuideLLM reports in milliseconds
         for pctl in ["mean", "p50", "p90", "p99"]:
-            val = extract_stat(stats, "ttft", pctl)
+            val = get_metric_val(metrics, "time_to_first_token_ms", pctl)
             if val is not None:
                 desc = {'source': 'vllm', 'class': 'count', 'type': 'ttft-%s-msec' % pctl}
-                sample = {'begin': begin_ms, 'end': end_ms, 'value': val * 1000}
-                metrics.log_sample(file_id, desc, names, sample)
+                sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
+                cdm.log_sample(file_id, desc, names, sample)
 
-        # ITL (inter-token latency) -- percentiles in milliseconds
+        # ITL (inter-token latency) — GuideLLM reports in milliseconds
         for pctl in ["mean", "p50", "p90", "p99"]:
-            val = extract_stat(stats, "itl", pctl)
+            val = get_metric_val(metrics, "inter_token_latency_ms", pctl)
             if val is not None:
                 desc = {'source': 'vllm', 'class': 'count', 'type': 'itl-%s-msec' % pctl}
-                sample = {'begin': begin_ms, 'end': end_ms, 'value': val * 1000}
-                metrics.log_sample(file_id, desc, names, sample)
+                sample = {'begin': begin_ms, 'end': end_ms, 'value': val}
+                cdm.log_sample(file_id, desc, names, sample)
 
-        # E2E request latency -- percentiles in milliseconds
+        # E2E request latency — GuideLLM reports in seconds, convert to ms
         for pctl in ["mean", "p50", "p90", "p99"]:
-            val = extract_stat(stats, "request_latency", pctl)
+            val = get_metric_val(metrics, "request_latency", pctl)
             if val is not None:
                 desc = {'source': 'vllm', 'class': 'count', 'type': 'e2e-latency-%s-msec' % pctl}
                 sample = {'begin': begin_ms, 'end': end_ms, 'value': val * 1000}
-                metrics.log_sample(file_id, desc, names, sample)
+                cdm.log_sample(file_id, desc, names, sample)
 
-    metric_file_name = metrics.finish_samples()
+    metric_file_name = cdm.finish_samples()
 
     output = {
         'rickshaw-bench-metric': {'schema': {'version': '2021.04.12'}},

@@ -3,38 +3,39 @@
 ## Parameter Reference
 
 All parameters are passed to the benchmark via the `mv-params` section
-of the run file in `--key=value` format. Parameters are validated by
-multiplex against the rules in `multiplex.json`.
+of the run file. Each parameter must include a `"role"` annotation to
+route it to the correct engine (`"server"`, `"client"`, or `"all"`).
 
 ### Server Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `device` | string | `cpu` | Inference device: `cpu` or `cuda` |
-| `model` | string | `Qwen/Qwen2.5-1.5B-Instruct` | HuggingFace model ID or local path |
-| `dtype` | string | `auto` | Model data type: `auto`, `float16`, `bfloat16`, `float32` |
-| `max-model-len` | integer | `512` | Maximum sequence length (context window) |
-| `tensor-parallel-size` | integer | `1` | Number of GPUs for tensor parallelism (GPU mode only) |
-| `port` | integer | `8000` | HTTP server port |
-| `quantization` | string | (none) | Quantization method: `awq`, `gptq`, `fp8`, `none` |
-| `gpu-memory-utilization` | float | `0.90` | Fraction of GPU memory to use (GPU mode only) |
+| Parameter | Type | Default | Role | Description |
+|-----------|------|---------|------|-------------|
+| `server-mode` | string | `vllm` | `server` | Server type: `mock` (lightweight mock) or `vllm` (real inference) |
+| `device` | string | `cpu` | `server` | Inference device: `cpu` or `cuda` |
+| `model` | string | `Qwen/Qwen2.5-1.5B-Instruct` | `all` | HuggingFace model ID, local path, or `mock-model` |
+| `dtype` | string | `auto` | `server` | Model data type: `auto`, `float16`, `bfloat16`, `float32` |
+| `max-model-len` | integer | `512` | `server` | Maximum sequence length (context window) |
+| `tensor-parallel-size` | integer | `1` | `server` | Number of GPUs for tensor parallelism (GPU mode only) |
+| `port` | integer | `8000` | `server` | HTTP server port |
+| `quantization` | string | (none) | `server` | Quantization method: `awq`, `gptq`, `fp8`, `none` |
+| `gpu-memory-utilization` | float | `0.90` | `server` | Fraction of GPU memory to use (GPU mode only) |
 
 ### Client Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `profile` | string | `synchronous` | GuideLLM benchmark profile: `synchronous`, `concurrent`, `throughput`, `constant`, `poisson`, `sweep` |
-| `duration` | integer | `60` | Benchmark duration per profile step in seconds |
-| `rate` | integer | (none) | Request rate (meaning depends on profile) |
-| `max-requests` | integer | (none) | Maximum number of requests per benchmark |
-| `input-tokens` | integer | `128` | Synthetic prompt token count |
-| `output-tokens` | integer | `64` | Target output token count |
+| Parameter | Type | Default | Role | Description |
+|-----------|------|---------|------|-------------|
+| `profile` | string | `synchronous` | `client` | GuideLLM benchmark profile: `synchronous`, `concurrent`, `throughput`, `constant`, `poisson`, `sweep` |
+| `duration` | integer | `60` | `client` | Benchmark duration per profile step in seconds |
+| `rate` | integer | (none) | `client` | Request rate (meaning depends on profile) |
+| `max-requests` | integer | (none) | `client` | Maximum number of requests per benchmark |
+| `input-tokens` | integer | `128` | `client` | Synthetic prompt token count |
+| `output-tokens` | integer | `64` | `client` | Target output token count |
 
 ### GuideLLM Profile Types
 
 | Profile | Behavior | Use Case |
 |---------|----------|----------|
-| `synchronous` | One request at a time, sequential | Baseline latency, CPU smoke test |
+| `synchronous` | One request at a time, sequential | Baseline latency, smoke test |
 | `concurrent` | Fixed number of parallel requests (set by `rate`) | Simulate N concurrent users |
 | `throughput` | Maximum request rate, no throttling | Find system ceiling |
 | `constant` | Fixed requests per second (set by `rate`) | Steady-state SLO validation |
@@ -45,17 +46,34 @@ multiplex against the rules in `multiplex.json`.
 
 ### cpu-smoke
 
-Minimal configuration for pipeline validation on CPU-only hosts.
+Fast pipeline validation using mock server. No real model needed.
 
 ```json
-{ "arg": "device", "vals": ["cpu"] }
-{ "arg": "model", "vals": ["Qwen/Qwen2.5-1.5B-Instruct"] }
-{ "arg": "dtype", "vals": ["float32"] }
-{ "arg": "max-model-len", "vals": ["512"] }
-{ "arg": "profile", "vals": ["synchronous"] }
-{ "arg": "duration", "vals": ["60"] }
-{ "arg": "input-tokens", "vals": ["128"] }
-{ "arg": "output-tokens", "vals": ["64"] }
+{ "arg": "server-mode", "vals": ["mock"], "role": "server" },
+{ "arg": "device", "vals": ["cpu"], "role": "server" },
+{ "arg": "model", "vals": ["mock-model"], "role": "all" },
+{ "arg": "dtype", "vals": ["float32"], "role": "server" },
+{ "arg": "max-model-len", "vals": ["256"], "role": "server" },
+{ "arg": "profile", "vals": ["synchronous"], "role": "client" },
+{ "arg": "duration", "vals": ["30"], "role": "client" },
+{ "arg": "input-tokens", "vals": ["64"], "role": "client" },
+{ "arg": "output-tokens", "vals": ["32"], "role": "client" }
+```
+
+### cpu-functional
+
+Real CPU inference with a small model for functional validation.
+
+```json
+{ "arg": "server-mode", "vals": ["vllm"], "role": "server" },
+{ "arg": "device", "vals": ["cpu"], "role": "server" },
+{ "arg": "model", "vals": ["Qwen/Qwen2.5-1.5B-Instruct"], "role": "all" },
+{ "arg": "dtype", "vals": ["float32"], "role": "server" },
+{ "arg": "max-model-len", "vals": ["512"], "role": "server" },
+{ "arg": "profile", "vals": ["synchronous"], "role": "client" },
+{ "arg": "duration", "vals": ["60"], "role": "client" },
+{ "arg": "input-tokens", "vals": ["128"], "role": "client" },
+{ "arg": "output-tokens", "vals": ["64"], "role": "client" }
 ```
 
 ### gpu-full
@@ -63,30 +81,31 @@ Minimal configuration for pipeline validation on CPU-only hosts.
 Production configuration for GPU performance testing.
 
 ```json
-{ "arg": "device", "vals": ["cuda"] }
-{ "arg": "model", "vals": ["meta-llama/Llama-3.1-8B-Instruct"] }
-{ "arg": "dtype", "vals": ["auto"] }
-{ "arg": "max-model-len", "vals": ["4096"] }
-{ "arg": "profile", "vals": ["sweep"] }
-{ "arg": "rate", "vals": ["10"] }
-{ "arg": "duration", "vals": ["30"] }
-{ "arg": "input-tokens", "vals": ["512"] }
-{ "arg": "output-tokens", "vals": ["256"] }
+{ "arg": "server-mode", "vals": ["vllm"], "role": "server" },
+{ "arg": "device", "vals": ["cuda"], "role": "server" },
+{ "arg": "model", "vals": ["meta-llama/Llama-3.1-8B-Instruct"], "role": "all" },
+{ "arg": "dtype", "vals": ["auto"], "role": "server" },
+{ "arg": "max-model-len", "vals": ["4096"], "role": "server" },
+{ "arg": "tensor-parallel-size", "vals": ["2"], "role": "server" },
+{ "arg": "profile", "vals": ["sweep"], "role": "client" },
+{ "arg": "rate", "vals": ["10"], "role": "client" },
+{ "arg": "duration", "vals": ["30"], "role": "client" },
+{ "arg": "input-tokens", "vals": ["512"], "role": "client" },
+{ "arg": "output-tokens", "vals": ["256"], "role": "client" }
 ```
 
-## CPU Execution Scenario
+## CPU Smoke Execution Scenario
 
 ### Prerequisites
 
 - Any x86_64 Linux host with podman, git, jq installed
 - Crucible installed and configured
-- At least 8 GB free RAM (non-hugepage)
-- Network access to download model from HuggingFace
+- No GPU required, no model download needed (uses mock server)
 
 ### Step 1: Create or copy the run file
 
 ```bash
-cp $CRUCIBLE_HOME/subprojects/benchmarks/vllm/run-vllm-cpu-smoke.json .
+cp $CRUCIBLE_HOME/subprojects/benchmarks/vllm/examples/run-vllm-cpu-smoke.json .
 ```
 
 Edit the file to set `controller-ip-address` and `host` to your
@@ -108,8 +127,8 @@ crucible get metric --run <run-id> --source vllm --type output-tokens-per-sec
 
 ### Expected Duration
 
-- First run: ~20 minutes (image build + model download)
-- Subsequent runs: ~8 minutes (cached image and model)
+- First run: ~5-10 minutes (image build with guidellm only)
+- Subsequent runs: ~1-2 minutes (cached image, mock server)
 
 ### What to Verify
 
@@ -117,6 +136,33 @@ crucible get metric --run <run-id> --source vllm --type output-tokens-per-sec
 - `post-process-data.json` exists in the run output
 - `output-tokens-per-sec` metric has a non-zero value
 - sysstat and procstat tool data was collected
+
+## CPU Functional Execution Scenario
+
+### Prerequisites
+
+- Any x86_64 Linux host with podman, git, jq installed
+- At least 8 GB free RAM (non-hugepage)
+- Network access to download model from HuggingFace (first run only)
+
+### Step 1: Create or copy the run file
+
+```bash
+cp $CRUCIBLE_HOME/subprojects/benchmarks/vllm/examples/run-vllm-cpu-functional.json .
+```
+
+Edit the file to set `controller-ip-address` and `host`.
+
+### Step 2: Run the benchmark
+
+```bash
+crucible run run-vllm-cpu-functional.json
+```
+
+### Expected Duration
+
+- First run: ~20 minutes (image build + model download)
+- Subsequent runs: ~8 minutes (cached image and model)
 
 ## GPU Execution Scenario
 
@@ -131,13 +177,13 @@ crucible get metric --run <run-id> --source vllm --type output-tokens-per-sec
 ### Step 1: Prepare the run file
 
 ```bash
-cp $CRUCIBLE_HOME/subprojects/benchmarks/vllm/run-vllm-gpu-full.json .
+cp $CRUCIBLE_HOME/subprojects/benchmarks/vllm/examples/run-vllm-gpu-full.json .
 ```
 
 Edit to set:
-- `GPU_HOST_HERE` -> GPU node hostname
-- `CLIENT_HOST_HERE` -> client node hostname (or same as GPU node)
-- `CONTROLLER_IP_HERE` -> controller IP reachable from both nodes
+- `YOUR_GPU_HOST_HERE` -> GPU node hostname
+- `YOUR_CLIENT_HOST_HERE` -> client node hostname (or same as GPU node)
+- `YOUR_CONTROLLER_IP_HERE` -> controller IP reachable from both nodes
 - `model` path -> actual model location on the GPU node
 
 ### Step 2: Single-node variant
@@ -169,7 +215,6 @@ crucible run run-vllm-gpu-full.json
 
 The sweep profile produces multiple benchmark entries in
 `benchmarks.json`. Each entry corresponds to a different load level.
-The CDM metrics include a `profile` name tag to distinguish them.
 
 ```bash
 crucible get metric --run <run-id> --source vllm --type output-tokens-per-sec
@@ -296,3 +341,15 @@ server and client nodes.
 
 **Fix**: Check `vllm-client-stderrout.txt.xz` for GuideLLM errors.
 Ensure the benchmark ran long enough to complete at least one request.
+
+### CDM indexing failure
+
+**Symptom**: `documents contain fields not defined in indexDefs`
+
+**Causes**:
+- Post-processing emits a `metric_desc.names` field not registered
+  in the CommonDataModel `cdm.js` index definitions
+
+**Fix**: Either remove the offending field from `vllm-post-process.py`
+or add it to CDM's `indexDefs` in a separate PR to the
+CommonDataModel repo.
